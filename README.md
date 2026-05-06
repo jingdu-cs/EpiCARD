@@ -9,7 +9,7 @@ This repository contains the code, configuration, preprocessing pipeline, and te
 ## Architecture
 
 ```
-GraphFreeDualBranchForecaster
+EpiCARD
 ├── CaseEventBranch                  case features → z_case
 ├── LocationTemporalBranch           location features → z_loc
 ├── SharedPrivateFusionHead          z_case, z_loc → s
