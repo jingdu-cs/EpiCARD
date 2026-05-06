@@ -37,6 +37,7 @@ For GPU training, install a PyTorch wheel that matches your CUDA toolchain (see 
 ---
 
 ## Data
+One sample dataset are provided here: https://figshare.com/s/509fd12a77f550dc0529 
 
 ### Strain LLM embeddings
 
