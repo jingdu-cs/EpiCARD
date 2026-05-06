@@ -1,0 +1,121 @@
+seed: 42
+
+data:
+  # Time granularity: "weeks" (default for AIV) or "days" (COVID/Japan)
+  time_unit: "weeks"
+  window_size: 8
+  stride: 1
+  # Legacy aliases (read as fallback by code)
+  window_size_weeks: 8
+  stride_weeks: 1
+  forecast_horizons: [1, 2, 4]
+  max_cases_per_window: 2000
+
+  # Per-capita target normalization. When true, targets and count-valued
+  # location features are divided by (population / per_capita_base), so the
+  # model predicts rates per base-population. Metrics are inverse-transformed
+  # back to count space for MAE/RMSE/MAPE/sMAPE/Pearson/Spearman/Coverage
+  # reporting; CRPS stays in rate space (consistent with loss); Outbreak uses
+  # rate-space threshold for the point-only forecaster.
+  per_capita_normalize: false
+  per_capita_base: 100000
+
+  # Case node feature dimensions
+  temporal_encoding_dim: 16
+  host_encoding_dim: 8
+  strain_encoding_dim: 16
+  genetic_feat_placeholder_dim: 64
+
+  # Strain LLM embeddings (null = disabled, backward compatible)
+  strain_embedding_file: null
+  strain_embedding_dim: 4096
+  # Embedding lookup key: "Strain" (legacy strain-level) or
+  # "Unique_Identifier" (sample-level four-card embeddings)
+  strain_embedding_key: "Unique_Identifier"
+
+  # Window Card causal-cutoff settings.
+  # When causal_cutoff is true, the Window Card omits retrospective phase
+  # labels and is rendered from an as-of-date snapshot derived from the
+  # project's own case_data.csv (no external lookups). Cache files keyed by
+  # (Unique_Identifier, as_of_date.isoformat()) are written in v2 format.
+  window_card:
+    causal_cutoff: true
+    reporting_lag_days: 14         # Δ_lag fallback when Report Date missing
+    lineage_window_days: 28        # past-window for top-3 lineage frequencies
+    lineage_block: true            # set false for V1 row (c) date-only ablation
+    trend_threshold: 0.10          # ±10% delta classifies as rising/declining
+
+  # Location features
+  incidence_lookback: 8
+  incidence_lookback_weeks: 8
+
+  # Splits
+  split_mode: "temporal"
+  train_ratio: 0.6
+  val_ratio: 0.2
+
+  # AIV dataset paths and config
+  aiv:
+    case_data: data/processed/aiv/case_data.csv
+    incidence_poultry: data/processed/aiv/hpai_backyard.csv
+    incidence_wildbird: data/processed/aiv/hpai-wild-birds.csv
+    abundance_dir: data/processed/aiv/abundance/
+    has_abundance: true
+    strain_embedding_file: null
+    excluded_categories: ["mammal", "human"]
+
+  # COVID dataset paths and config
+  covid:
+    case_data: data/processed/covid/case_data.csv
+    incidence: data/processed/covid/covid_confirmed.csv
+    has_abundance: false
+    strain_embedding_file: null
+    restrict_to_incidence_locations: false
+
+  # Japan dataset paths and config
+  japan:
+    case_data: data/processed/japan/case_data.csv
+    incidence: data/processed/japan/japan_confirmed.csv
+    has_abundance: false
+    strain_embedding_file: null
+
+training:
+  monitor_metric: "RMSE"  # metric for early stopping & best-model: "RMSE" | "MAE"
+
+model:
+  hidden_dim: 128
+  dropout: 0.1
+
+  # Graph-free model settings
+  graph_free:
+    num_residual_blocks: 3     # residual MLP blocks in LocationTemporalBranch
+    max_time_windows: 512      # max temporal position for embedding table
+
+  # Main fusion-horizon training path (point forecast + residual shared/private fusion)
+  fusion_horizon:
+    enabled: true                 # main training path
+    head:
+      mode: "shared_private"
+      decomp_loss_weight: 1.0e-4 # light cosine^2 regularizer for shared/private split
+    cross_attn:
+      enabled: true
+      num_heads: 1
+      dropout: 0.1
+    moe:
+      enabled: true
+      expert_hidden_dim: 256     # null -> D (D_ff = D)
+      expert_dropout: 0.2
+      shared_expert: true         # H3 mode: E = H + 1 (shared + per-horizon)
+      per_horizon_expert: true
+      adaptive_mixing:
+        enabled: true
+        mode: "horizon_scalar"
+        init_shared_logit: 1.0
+    persistence:
+      enabled: true
+      history_window: 12           # K: recent observed counts exposed as y_hist
+      init_mode: "last_plus_trend"  # or "last_value"
+      freeze_epochs: 0
+    sigma:
+      per_horizon_scale: true     # enable log_s_h, b_σ_h
+      sigma_clamp_min: 1.0e-4

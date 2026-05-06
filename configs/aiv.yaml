@@ -1,0 +1,46 @@
+dataset_name: "aiv"
+
+data:
+  strain_embedding_file: data/processed/aiv/sample_embeddings_llama3_8B.pt
+  per_capita_normalize: false
+
+model:
+  fusion_horizon:
+    enabled: true
+    head:
+      decomp_loss_weight: 5.0e-5
+    cross_attn:
+      enabled: true
+    moe:
+      enabled: true
+      expert_dropout: 0.2
+      expert_hidden_dim: 128
+      shared_expert: true
+      per_horizon_expert: true
+      adaptive_mixing:
+        enabled: true
+        init_shared_logit: 1.5
+    persistence:
+      enabled: true
+      history_window: 8
+    sigma:
+      per_horizon_scale: true
+      sigma_clamp_min: 1.0e-4
+
+training:
+  lr: 5.0e-4
+  min_lr: 1.0e-5
+  weight_decay: 1.0e-4
+  max_epochs: 200
+  patience: 20
+  max_grad_norm: 1.0
+  warmup_epochs: 10
+  batch_size: 4
+  grad_accum_steps: 1
+  num_workers: 4
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+
+evaluation:
+  outbreak_percentile: 90
+  coverage_levels: [0.5, 0.9]

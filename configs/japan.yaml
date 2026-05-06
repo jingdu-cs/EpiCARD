@@ -1,0 +1,40 @@
+dataset_name: "japan"
+
+data:
+  strain_embedding_file: data/processed/japan/sample_embeddings_llama3_8B.pt
+  time_unit: "days"
+  window_size: 28
+  stride: 7
+  incidence_lookback: 28
+
+model:
+  fusion_horizon:
+    head:
+      decomp_loss_weight: 5.0e-5
+    moe:
+      expert_dropout: 0.3
+      expert_hidden_dim: 256
+      adaptive_mixing:
+        init_shared_logit: 1.5
+    persistence:
+      history_window: 8
+      init_mode: "last_plus_trend"
+
+
+training:
+  lr: 1.0e-3
+  min_lr: 1.0e-5
+  weight_decay: 1.0e-4
+  max_epochs: 200
+  patience: 20
+  max_grad_norm: 1.0
+  warmup_epochs: 5
+  batch_size: 8
+  grad_accum_steps: 1
+  num_workers: 4
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+
+evaluation:
+  outbreak_percentile: 90
+  coverage_levels: [0.5, 0.9]

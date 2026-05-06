@@ -1,0 +1,32 @@
+dataset_name: "covid"
+
+data:
+  strain_embedding_file: data/processed/covid/sample_embeddings_llama3_8B.pt
+  per_capita_normalize: false
+  time_unit: "days"
+  window_size: 28
+  stride: 7
+  incidence_lookback: 28
+  covid:
+    # Restrict the forecaster's location_index to (state, county) pairs that
+    # have JHU CSSE incidence coverage; case rows falling on case-only
+    # locations are dropped from the loader.
+    restrict_to_incidence_locations: true
+
+training:
+  lr: 1.0e-3
+  min_lr: 1.0e-5
+  weight_decay: 1.0e-4
+  max_epochs: 200
+  patience: 20
+  max_grad_norm: 1.0
+  warmup_epochs: 5
+  batch_size: 1
+  grad_accum_steps: 1
+  num_workers: 0
+  checkpoint_dir: "checkpoints"
+  log_dir: "logs"
+
+evaluation:
+  outbreak_percentile: 90
+  coverage_levels: [0.5, 0.9]
