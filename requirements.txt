@@ -8,10 +8,6 @@ scikit-learn>=1.3,<2.0
 # Data preprocessing
 PyYAML>=6.0,<7.0
 rapidfuzz>=3.0,<4.0
-
-# LLM embedding generation (only needed when running
-# `data_processing.generate_sample_embeddings`; safe to omit at training time
-# if you already have the precomputed `sample_embeddings_*.pt` files).
 transformers>=4.40,<5.0
 
 # Tests
