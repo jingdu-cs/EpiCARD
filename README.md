@@ -38,14 +38,6 @@ For GPU training, install a PyTorch wheel that matches your CUDA toolchain (see 
 
 ## Data
 
-```bash
-python -m data_processing.run_all                    # process all three datasets
-python -m data_processing.run_all --aiv              # subset
-python -m data_processing.run_all --fuzzy-threshold 90
-```
-
-Outputs land under `data/processed/{aiv,covid,japan}/`.
-
 ### Strain LLM embeddings
 
 The model consumes precomputed sample-level LLM embeddings indexed by `Unique_Identifier`. Generate them with:
